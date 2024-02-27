@@ -49,6 +49,8 @@ main_webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
 )
+if not main_webrtc_ctx.video_receiver:
+     main_webrtc_ctx.video_receiver.start()
 
 
 #  録音
@@ -64,14 +66,14 @@ webrtc_ctx = webrtc_streamer(
     media_stream_constraints={"audio": True},
 )
 
-if webrtc_ctx.audio_receiver:
-    while True:
-        try:
-            audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-        except queue.Empty:
+while webrtc_ctx.audio_receiver:
+    try:
+        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+        logger.info("録音中")
+    except queue.Empty:
             logger.warning("Queue is empty. Abort.")
             break
-        for audio_frame in audio_frames:
+    for audio_frame in audio_frames:
             sound = pydub.AudioSegment(
             data=audio_frame.to_ndarray().tobytes(),
             sample_width=audio_frame.format.bytes,

@@ -28,7 +28,6 @@ ROOT = HERE.parent
 logger = logging.getLogger(__name__)
 
 
-
 #　録音周りの設定
 RECORD_DIR = Path("./records")
 
@@ -66,46 +65,39 @@ main_webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
 )
-#とりあえず会話の開始も終了もユーザがボタンで行うことにする
-if 'recording' not in st.session_state:
-    st.session_state.recording = False
+# if not main_webrtc_ctx.video_receiver:
+#      main_webrtc_ctx.video_receiver.start()
 
-# ユーザーが「会話開始/終了」ボタンをクリックした時の動作を定義する関数
-def toggle_recording():
-    # 録音の状態をトグルする
-    st.session_state.recording = not st.session_state.recording
+#  録音
+sound_chunk = pydub.AudioSegment.empty()
+# def on_audio_ended():
+#     sound_chunk.export("test.wav", format="wav")
+#     logger.warning("Audio file is saved.")
 
-# 「会話開始/終了」ボタン
-if st.session_state.recording:
-    st.button('発言終了', on_click=toggle_recording)
-else:
-    st.button('発言開始', on_click=toggle_recording)
-    
-# 録音中の処理
-while st.session_state.recording:
-     if webrtc_ctx.audio_receiver:
-        try:
-            audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-        except queue.Empty:
+webrtc_ctx = webrtc_streamer(
+    key="sendonly-audio",
+    mode=WebRtcMode.SENDONLY,
+    audio_receiver_size=256,
+    rtc_configuration={
+        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+    },
+    media_stream_constraints={"audio": True},
+    # on_audio_ended=on_audio_ended
+)
+
+while webrtc_ctx.audio_receiver:
+    try:
+        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+    except queue.Empty:
             logger.warning("Queue is empty. Abort.")
             break
-
-        sound_chunk = pydub.AudioSegment.empty()
-        for audio_frame in audio_frames:
+    for audio_frame in audio_frames:
             sound = pydub.AudioSegment(
             data=audio_frame.to_ndarray().tobytes(),
             sample_width=audio_frame.format.bytes,
             frame_rate=audio_frame.sample_rate,
             channels=len(audio_frame.layout.channels),
-        )
-        sound_chunk += sound
-        st.write("録音中")
+            )
+            sound_chunk += sound
 sound_chunk.export("test.wav", format="wav")
-
-st.markdown(
-    "The video filter in this demo is based on "
-    "https://github.com/aiortc/aiortc/blob/2362e6d1f0c730a0f8c387bbea76546775ad2fe8/examples/server/server.py#L34. "  # noqa: E501
-    "Many thanks to the project."
-)
-
-
+logger.warning("Audio file is saved.")

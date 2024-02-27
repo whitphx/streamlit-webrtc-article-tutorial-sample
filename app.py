@@ -16,6 +16,7 @@ from pathlib import Path
 import uuid
 import queue
 import pydub
+import os
 from aiortc.contrib.media import MediaRecorder  # noqa: E402
 
 import streamlit as st
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 #　録音周りの設定
 RECORD_DIR = Path("./records")
+os.makedirs(RECORD_DIR, exist_ok=True)
 
 if "talk_id" not in st.session_state:
     st.session_state["talk_id"] = str(uuid.uuid4())

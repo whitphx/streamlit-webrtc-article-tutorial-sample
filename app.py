@@ -5,6 +5,7 @@ st.title("My first Streamlit app")
 st.write("Hello, world")
 
 """Media streamings"""
+import pydub
 import logging
 from pathlib import Path
 import uuid
@@ -48,16 +49,28 @@ webrtc_ctx = webrtc_streamer(
     audio_receiver_size=256,
     video_frame_callback=video_frame_callback, # 画像をそのまま返す
     audio_frame_callback=audio_frame_callback, # 音声ファイルからframeにして返す
-    #in_recorder_factory=in_recorder_factory,  #　ここで録音を行う
+    in_recorder_factory=in_recorder_factory,  #　ここで録音を行う
     rtc_configuration={
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
 )
+#とりあえず会話の開始も終了もユーザがボタンで行うことにする
+if 'recording' not in st.session_state:
+    st.session_state.recording = False
 
+# ユーザーが「会話開始/終了」ボタンをクリックした時の動作を定義する関数
+def toggle_recording():
+    # 録音の状態をトグルする
+    st.session_state.recording = not st.session_state.recording
 
-
-###### ここより下触らないで
-while st.checkbox('now talking'):
+# 「会話開始/終了」ボタン
+if st.session_state.recording:
+    st.button('会話終了', on_click=toggle_recording)
+else:
+    st.button('会話開始', on_click=toggle_recording)
+    
+# 録音中の処理
+while st.session_state.recording:
     if webrtc_ctx.audio_receiver:
         try:
             audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
@@ -74,12 +87,8 @@ while st.checkbox('now talking'):
                 channels=len(audio_frame.layout.channels),
             )
             sound_chunk += sound
-
-###whileループを抜けた時、すなわち録音を終了とした時に以下を実行するように、田村に書いて欲しい！！　            
-    sound_chunk.export("test.wav", format="wav")
-            
-
-####### ここより上触らないで
+    st.write("録音中")           
+sound_chunk.export("test.wav", format="wav")
 
 st.markdown(
     "The video filter in this demo is based on "

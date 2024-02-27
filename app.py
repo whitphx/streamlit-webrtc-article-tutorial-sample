@@ -78,6 +78,7 @@ if st.session_state.recording:
 else:
     st.button('発言開始', on_click=toggle_recording)
     
+sound_chunk = pydub.AudioSegment.empty()
 # 録音中の処理
 while st.session_state.recording:
      if webrtc_ctx.audio_receiver:
@@ -86,7 +87,6 @@ while st.session_state.recording:
         except queue.Empty:
             logger.warning("Queue is empty. Abort.")
             break
-        sound_chunk = pydub.AudioSegment.empty()
         for audio_frame in audio_frames:
             sound = pydub.AudioSegment(
             data=audio_frame.to_ndarray().tobytes(),

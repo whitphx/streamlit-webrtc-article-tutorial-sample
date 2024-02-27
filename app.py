@@ -1,6 +1,9 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer
 
+from dotenv import load_dotenv
+load_dotenv()
+
 st.title("My first Streamlit app")
 st.write("Hello, world")
 
@@ -16,7 +19,7 @@ from aiortc.contrib.media import MediaRecorder  # noqa: E402
 import streamlit as st
 from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
-from services import video_frame_callback, audio_frame_callback
+from callbacks import video_frame_callback, audio_frame_callback
 
 
 HERE = Path(__file__).parent
@@ -50,7 +53,7 @@ webrtc_ctx = webrtc_streamer(
     },
     media_stream_constraints={"audio": True},
 )
-    
+
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 main_webrtc_ctx = webrtc_streamer(

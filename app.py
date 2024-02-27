@@ -37,6 +37,7 @@ os.makedirs(RECORD_DIR, exist_ok=True)
 
 if "talk_id" not in st.session_state:
     st.session_state["talk_id"] = str(uuid.uuid4())
+    st.write("hello")
     sound_chunk = pydub.AudioSegment.empty()
 talk_id = st.session_state["talk_id"]
 

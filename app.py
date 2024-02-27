@@ -40,9 +40,20 @@ def in_recorder_factory() -> MediaRecorder:
     )
 
 
+#  録音
+webrtc_ctx = webrtc_streamer(
+    key="sendonly-audio",
+    mode=WebRtcMode.SENDONLY,
+    audio_receiver_size=256,
+    rtc_configuration={
+        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+    },
+    media_stream_constraints={"audio": True},
+)
+    
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
-webrtc_ctx = webrtc_streamer(
+main_webrtc_ctx = webrtc_streamer(
     key="mock",
     mode=WebRtcMode.SENDRECV,
     video_frame_callback=video_frame_callback, # 画像をそのまま返す
@@ -69,7 +80,7 @@ else:
     
 # 録音中の処理
 while st.session_state.recording:
-     if webrtc_ctx.audio_receiver:   
+     if webrtc_ctx.audio_receiver:
         try:
             audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
         except queue.Empty:

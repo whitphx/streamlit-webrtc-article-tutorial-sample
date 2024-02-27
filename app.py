@@ -40,18 +40,6 @@ def in_recorder_factory() -> MediaRecorder:
     )
 
 
-#  録音
-webrtc_ctx = webrtc_streamer(
-    key="sendonly-audio",
-    mode=WebRtcMode.SENDONLY,
-    audio_receiver_size=256,
-    rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    },
-    media_stream_constraints={"audio": True},
-)
-    
-
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 main_webrtc_ctx = webrtc_streamer(
     key="mock",
@@ -63,25 +51,22 @@ main_webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
 )
-#とりあえず会話の開始も終了もユーザがボタンで行うことにする
-if 'recording' not in st.session_state:
-    st.session_state.recording = False
 
-# ユーザーが「会話開始/終了」ボタンをクリックした時の動作を定義する関数
-def toggle_recording():
-    # 録音の状態をトグルする
-    st.session_state.recording = not st.session_state.recording
 
-# 「会話開始/終了」ボタン
-if st.session_state.recording:
-    st.button('発言終了', on_click=toggle_recording)
-else:
-    st.button('発言開始', on_click=toggle_recording)
-    
+#  録音
 sound_chunk = pydub.AudioSegment.empty()
-# 録音中の処理
-while st.session_state.recording:
-     if webrtc_ctx.audio_receiver:
+webrtc_ctx = webrtc_streamer(
+    key="sendonly-audio",
+    mode=WebRtcMode.SENDONLY,
+    audio_receiver_size=256,
+    rtc_configuration={
+        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+    },
+    media_stream_constraints={"audio": True},
+)
+
+if webrtc_ctx.audio_receiver:
+    while True:
         try:
             audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
         except queue.Empty:
@@ -89,15 +74,16 @@ while st.session_state.recording:
             break
         for audio_frame in audio_frames:
             sound = pydub.AudioSegment(
-            data=audio_frame.to_ndarray().tobytes(),
-            sample_width=audio_frame.format.bytes,
-            frame_rate=audio_frame.sample_rate,
-            channels=len(audio_frame.layout.channels),
-        )
-        sound_chunk += sound
-        st.write("録音中")
-if len(sound_chunk) > 0:
-    sound_chunk.export("test.wav", format="wav")
+                data=audio_frame.to_ndarray().tobytes(),
+                sample_width=audio_frame.format.bytes,
+                frame_rate=audio_frame.sample_rate,
+                channels=len(audio_frame.layout.channels),
+            )
+            sound_chunk += sound
+
+# 録音が終了したら、結合された音声データをファイルにエクスポート
+sound_chunk.export("test.wav", format="wav")
+    
 
 st.markdown(
     "The video filter in this demo is based on "

@@ -9,8 +9,7 @@ import logging
 from pathlib import Path
 import uuid
 import queue
-import cv2
-import av
+import pydub
 from aiortc.contrib.media import MediaRecorder  # noqa: E402
 
 import streamlit as st

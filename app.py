@@ -91,5 +91,8 @@ while webrtc_ctx.audio_receiver:
             channels=len(audio_frame.layout.channels),
             )
             sound_chunk += sound
-sound_chunk.export("test.wav", format="wav")
+            
+sound_chunk.export(f"./records/{st.session_state.talk_id}.wav", format="wav")
 logger.warning("Audio file is saved.")
+sound_chunk = pydub.AudioSegment.empty()
+st.session_state["talk_id"] = str(uuid.uuid4())

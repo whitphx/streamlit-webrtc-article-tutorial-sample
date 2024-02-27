@@ -49,8 +49,8 @@ main_webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
 )
-if not main_webrtc_ctx.video_receiver:
-     main_webrtc_ctx.video_receiver.start()
+# if not main_webrtc_ctx.video_receiver:
+#      main_webrtc_ctx.video_receiver.start()
 
 
 #  録音

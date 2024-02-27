@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer
-
+import time
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -67,6 +67,10 @@ webrtc_ctx = webrtc_streamer(
     media_stream_constraints={"audio": True},
 )
 
+if "is_first" not in st.session_state:
+    while not webrtc_ctx.state.playing:
+        time.sleep(0.1)
+
 while True:
     if webrtc_ctx.state.playing:
         st.session_state["is_first"] = True
@@ -87,8 +91,7 @@ while True:
         logger.warning("Audio receiver is not set. Abort.")
         break
 #これだと、画面が開いた時にexportしてしまう
-if "is_first" not in st.session_state:
-    st.session_state["sound_chunk"].export(f"{str(RECORD_DIR)}/{st.session_state.talk_id}.wav", format="wav")
-    logger.warning("Audio file is saved.")
-    sound_chunk = pydub.AudioSegment.empty()
+st.session_state["sound_chunk"].export(f"{str(RECORD_DIR)}/{st.session_state.talk_id}.wav", format="wav")
+logger.warning("Audio file is saved.")
+sound_chunk = pydub.AudioSegment.empty()
 st.session_state["talk_id"] = str(uuid.uuid4())

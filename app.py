@@ -36,7 +36,7 @@ RECORD_DIR = Path("./records")
 if "talk_id" not in st.session_state:
     st.session_state["talk_id"] = str(uuid.uuid4())
     sound_chunk = pydub.AudioSegment.empty()
-talk_id = st.session_state["prefix"]
+talk_id = st.session_state["talk_id"]
 
 
 

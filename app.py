@@ -55,6 +55,7 @@ main_webrtc_ctx = webrtc_streamer(
 sound_chunk = pydub.AudioSegment.empty()
 def on_audio_ended():
     sound_chunk.export("test.wav", format="wav")
+    logger.info(sound_chunk)
 
 webrtc_ctx = webrtc_streamer(
     key="sendonly-audio",

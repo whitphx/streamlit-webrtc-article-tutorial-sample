@@ -62,6 +62,7 @@ webrtc_ctx = webrtc_streamer(
     },
     media_stream_constraints={"audio": True},
 )
+
 while webrtc_ctx.audio_receiver:
     try:
             audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
@@ -79,4 +80,4 @@ while webrtc_ctx.audio_receiver:
 
 # 録音が終了したら、結合された音声データをファイルにエクスポート
 # sound_chunk.export("test.wav", format="wav")
-logger.warning("Queue is empty. Abort.")
+logger.warning("録音終了")

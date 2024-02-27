@@ -52,7 +52,6 @@ main_webrtc_ctx = webrtc_streamer(
 # if not main_webrtc_ctx.video_receiver:
 #      main_webrtc_ctx.video_receiver.start()
 
-
 #  録音
 sound_chunk = pydub.AudioSegment.empty()
 
@@ -69,7 +68,6 @@ webrtc_ctx = webrtc_streamer(
 while webrtc_ctx.audio_receiver:
     try:
         audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-        logger.info("録音中")
     except queue.Empty:
             logger.warning("Queue is empty. Abort.")
             break
@@ -82,4 +80,4 @@ while webrtc_ctx.audio_receiver:
             )
             sound_chunk += sound
 sound_chunk.export("test.wav", format="wav")
-logger.info("Audio file is saved.")
+logger.warning("Audio file is saved.")

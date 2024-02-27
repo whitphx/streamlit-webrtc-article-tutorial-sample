@@ -53,6 +53,9 @@ main_webrtc_ctx = webrtc_streamer(
 
 #  録音
 sound_chunk = pydub.AudioSegment.empty()
+def on_audio_ended():
+    sound_chunk.export("test.wav", format="wav")
+
 webrtc_ctx = webrtc_streamer(
     key="sendonly-audio",
     mode=WebRtcMode.SENDONLY,
@@ -61,6 +64,7 @@ webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
     media_stream_constraints={"audio": True},
+    on_audio_ended=on_audio_ended,
 )
 
 while webrtc_ctx.audio_receiver:
@@ -77,6 +81,3 @@ while webrtc_ctx.audio_receiver:
             channels=len(audio_frame.layout.channels),
             )
             sound_chunk += sound
-
-# 録音が終了したら、結合された音声データをファイルにエクスポート
-sound_chunk.export("test.wav", format="wav")

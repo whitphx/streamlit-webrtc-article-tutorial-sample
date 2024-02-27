@@ -78,5 +78,5 @@ while webrtc_ctx.audio_receiver:
             sound_chunk += sound
 
 # 録音が終了したら、結合された音声データをファイルにエクスポート
-sound_chunk.export("test.wav", format="wav")
-
+# sound_chunk.export("test.wav", format="wav")
+logger.warning("Queue is empty. Abort.")

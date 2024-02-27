@@ -25,7 +25,6 @@ from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
 from callbacks import video_frame_callback, audio_frame_callback
 
-
 HERE = Path(__file__).parent
 ROOT = HERE.parent
 
@@ -56,38 +55,46 @@ main_webrtc_ctx = webrtc_streamer(
     },
 )
 
-#  録音
-webrtc_ctx = webrtc_streamer(
-    key="sendonly-audio",
-    mode=WebRtcMode.SENDONLY,
-    audio_receiver_size=256,
-    rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    },
-    media_stream_constraints={"audio": True},
-)
+if main_webrtc_ctx.state.playing:
+    st.write("recording")
+    #  録音
+    webrtc_ctx = webrtc_streamer(
+        key="sendonly-audio",
+        mode=WebRtcMode.SENDONLY,
+        audio_receiver_size=256,
+        rtc_configuration={
+            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+        },
+        media_stream_constraints={"audio": True},
+    )
 
-while True:
-    if webrtc_ctx.state.playing:
-        st.session_state["is_first"] = True
-        try:
-            audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-        except queue.Empty:
-                logger.warning("Queue is empty. Abort.")
-                break
-        for audio_frame in audio_frames:
-                sound = pydub.AudioSegment(
-                data=audio_frame.to_ndarray().tobytes(),
-                sample_width=audio_frame.format.bytes,
-                frame_rate=audio_frame.sample_rate,
-                channels=len(audio_frame.layout.channels),
-                )
-                st.session_state["sound_chunk"] += sound
+    while True:
+        if webrtc_ctx.state.playing:
+            #st.session_state["is_first"] = True
+            try:
+                audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+            except queue.Empty:
+                    logger.warning("Queue is empty. Abort.")
+                    break
+            for audio_frame in audio_frames:
+                    sound = pydub.AudioSegment(
+                    data=audio_frame.to_ndarray().tobytes(),
+                    sample_width=audio_frame.format.bytes,
+                    frame_rate=audio_frame.sample_rate,
+                    channels=len(audio_frame.layout.channels),
+                    )
+                    st.session_state["sound_chunk"] += sound
+        else:
+            logger.warning("Audio receiver is not set. Abort.")
+            break
+
+    if len(st.session_state["sound_chunk"]) > 0:
+        st.session_state["sound_chunk"].export(f"{str(RECORD_DIR)}/{st.session_state.talk_id}.wav", format="wav")
+        logger.warning("Audio file is saved.")
+        st.session_state["sound_chunk"] = pydub.AudioSegment.empty()
+        st.session_state["talk_id"] = str(uuid.uuid4())
     else:
-        logger.warning("Audio receiver is not set. Abort.")
-        break
-if "is_first" in st.session_state:
-    st.session_state["sound_chunk"].export(f"{str(RECORD_DIR)}/{st.session_state.talk_id}.wav", format="wav")
-    logger.warning("Audio file is saved.")
-    sound_chunk = pydub.AudioSegment.empty()
-    st.session_state["talk_id"] = str(uuid.uuid4())
+        print("No sound is recorded.")
+else:
+    st.write("ここに設定欄を書く")
+

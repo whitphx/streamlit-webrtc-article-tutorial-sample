@@ -33,15 +33,11 @@ logger = logging.getLogger(__name__)
 #　録音周りの設定
 RECORD_DIR = Path("./records")
 
-if "prefix" not in st.session_state:
-    st.session_state["prefix"] = str(uuid.uuid4())
-prefix = st.session_state["prefix"]
-in_file = RECORD_DIR / f"{prefix}_input.flv"
+if "talk_id" not in st.session_state:
+    st.session_state["talk_id"] = str(uuid.uuid4())
+    sound_chunk = pydub.AudioSegment.empty()
+talk_id = st.session_state["prefix"]
 
-def in_recorder_factory() -> MediaRecorder:
-    return MediaRecorder(
-        str(in_file), format="flv"
-    )
 
 
 
@@ -52,7 +48,6 @@ main_webrtc_ctx = webrtc_streamer(
     mode=WebRtcMode.SENDRECV,
     video_frame_callback=video_frame_callback, # 画像をそのまま返す
     audio_frame_callback=audio_frame_callback, # 音声ファイルからframeにして返す
-    in_recorder_factory=in_recorder_factory,  #　ここで録音を行う
     rtc_configuration={
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
@@ -61,7 +56,8 @@ main_webrtc_ctx = webrtc_streamer(
 #      main_webrtc_ctx.video_receiver.start()
 
 #  録音
-sound_chunk = pydub.AudioSegment.empty()
+
+
 # def on_audio_ended():
 #     sound_chunk.export("test.wav", format="wav")
 #     logger.warning("Audio file is saved.")
@@ -91,5 +87,8 @@ while webrtc_ctx.audio_receiver:
             channels=len(audio_frame.layout.channels),
             )
             sound_chunk += sound
-sound_chunk.export("test.wav", format="wav")
+            
+sound_chunk.export(f"./records/{st.session_state["talk_id"]}.wav", format="wav")
 logger.warning("Audio file is saved.")
+sound_chunk = pydub.AudioSegment.empty()
+st.session_state["talk_id"] = str(uuid.uuid4())

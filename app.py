@@ -69,8 +69,7 @@ webrtc_ctx = webrtc_streamer(
 
 while True:
     if webrtc_ctx.state.playing:
-        if "is_first" not in st.session_state:
-            st.session_state["is_first"] = True
+        st.session_state["is_first"] = True
         try:
             audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
         except queue.Empty:

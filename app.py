@@ -25,7 +25,6 @@ ROOT = HERE.parent
 logger = logging.getLogger(__name__)
 
 
-
 #　録音周りの設定
 RECORD_DIR = Path("./records")
 
@@ -38,7 +37,6 @@ def in_recorder_factory() -> MediaRecorder:
     return MediaRecorder(
         str(in_file), format="flv"
     )
-
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 main_webrtc_ctx = webrtc_streamer(
@@ -64,31 +62,21 @@ webrtc_ctx = webrtc_streamer(
     },
     media_stream_constraints={"audio": True},
 )
-
-if webrtc_ctx.audio_receiver:
-    while True:
-        try:
+while webrtc_ctx.audio_receiver:
+    try:
             audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-        except queue.Empty:
+    except queue.Empty:
             logger.warning("Queue is empty. Abort.")
             break
-        for audio_frame in audio_frames:
+    for audio_frame in audio_frames:
             sound = pydub.AudioSegment(
-                data=audio_frame.to_ndarray().tobytes(),
-                sample_width=audio_frame.format.bytes,
-                frame_rate=audio_frame.sample_rate,
-                channels=len(audio_frame.layout.channels),
+            data=audio_frame.to_ndarray().tobytes(),
+            sample_width=audio_frame.format.bytes,
+            frame_rate=audio_frame.sample_rate,
+            channels=len(audio_frame.layout.channels),
             )
             sound_chunk += sound
 
 # 録音が終了したら、結合された音声データをファイルにエクスポート
 sound_chunk.export("test.wav", format="wav")
-    
-
-st.markdown(
-    "The video filter in this demo is based on "
-    "https://github.com/aiortc/aiortc/blob/2362e6d1f0c730a0f8c387bbea76546775ad2fe8/examples/server/server.py#L34. "  # noqa: E501
-    "Many thanks to the project."
-)
-
 

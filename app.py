@@ -69,22 +69,23 @@ else:
     
 # 録音中の処理
 while st.session_state.recording:
-    try:
-        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-    except queue.Empty:
-        logger.warning("Queue is empty. Abort.")
-        break
+     if webrtc_ctx.audio_receiver:   
+        try:
+            audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+        except queue.Empty:
+            logger.warning("Queue is empty. Abort.")
+            break
 
-    sound_chunk = pydub.AudioSegment.empty()
-    for audio_frame in audio_frames:
-        sound = pydub.AudioSegment(
+        sound_chunk = pydub.AudioSegment.empty()
+        for audio_frame in audio_frames:
+            sound = pydub.AudioSegment(
             data=audio_frame.to_ndarray().tobytes(),
             sample_width=audio_frame.format.bytes,
             frame_rate=audio_frame.sample_rate,
             channels=len(audio_frame.layout.channels),
         )
         sound_chunk += sound
-    st.write("録音中")           
+        st.write("録音中")
 sound_chunk.export("test.wav", format="wav")
 
 st.markdown(

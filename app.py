@@ -1,9 +1,11 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer
 
-from dotenv import load_dotenv
-load_dotenv()
-
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 st.title("My first Streamlit app")
 st.write("Hello, world")
 

@@ -75,7 +75,6 @@ while st.session_state.recording:
         except queue.Empty:
             logger.warning("Queue is empty. Abort.")
             break
-
         sound_chunk = pydub.AudioSegment.empty()
         for audio_frame in audio_frames:
             sound = pydub.AudioSegment(
@@ -86,7 +85,8 @@ while st.session_state.recording:
         )
         sound_chunk += sound
         st.write("録音中")
-sound_chunk.export("test.wav", format="wav")
+if len(sound_chunk) > 0:
+    sound_chunk.export("test.wav", format="wav")
 
 st.markdown(
     "The video filter in this demo is based on "

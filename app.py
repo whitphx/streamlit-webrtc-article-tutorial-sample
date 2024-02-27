@@ -64,9 +64,9 @@ def toggle_recording():
 
 # 「会話開始/終了」ボタン
 if st.session_state.recording:
-    st.button('会話終了', on_click=toggle_recording)
+    st.button('発言終了', on_click=toggle_recording)
 else:
-    st.button('会話開始', on_click=toggle_recording)
+    st.button('発言開始', on_click=toggle_recording)
     
 # 録音中の処理
 while st.session_state.recording:

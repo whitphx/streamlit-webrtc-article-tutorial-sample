@@ -65,19 +65,30 @@ webrtc_ctx = webrtc_streamer(
     media_stream_constraints={"audio": True},
 )
 
-while webrtc_ctx.audio_receiver:
-    try:
-        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-    except queue.Empty:
-            logger.warning("Queue is empty. Abort.")
-            break
-    for audio_frame in audio_frames:
+# 既存のwhileループの外にエクスポート処理を移動
+if webrtc_ctx.audio_receiver:
+    while True:
+        try:
+            audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+        except queue.Empty:
+            logger.warning("Queue is empty. Continue waiting.")
+            continue  # 空の場合は待機を継続
+
+        if not audio_frames:
+            logger.info("No more frames. Stream ended.")
+            break  # フレームがもうない場合はループを抜ける
+
+        for audio_frame in audio_frames:
             sound = pydub.AudioSegment(
-            data=audio_frame.to_ndarray().tobytes(),
-            sample_width=audio_frame.format.bytes,
-            frame_rate=audio_frame.sample_rate,
-            channels=len(audio_frame.layout.channels),
+                data=audio_frame.to_ndarray().tobytes(),
+                sample_width=audio_frame.format.bytes,
+                frame_rate=audio_frame.sample_rate,
+                channels=len(audio_frame.layout.channels),
             )
             sound_chunk += sound
-sound_chunk.export("test.wav", format="wav")
-logger.warning("Audio file is saved.")
+
+    # ストリーム終了後に一度だけ実行
+    sound_chunk.export("test.wav", format="wav")
+    logger.warning("Audio file is saved.")
+else:
+    logger.info("Audio Receiver not started or already stopped.")

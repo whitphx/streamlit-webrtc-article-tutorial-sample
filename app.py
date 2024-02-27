@@ -40,17 +40,6 @@ def in_recorder_factory() -> MediaRecorder:
     )
 
 
-class VideoProcessor:
-    def __init__(self) -> None:
-        self.threshold1 = 100
-        self.threshold2 = 200
-
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-
-        img = cv2.cvtColor(cv2.Canny(img, self.threshold1, self.threshold2), cv2.COLOR_GRAY2BGR)
-
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 webrtc_ctx = webrtc_streamer(
@@ -65,10 +54,6 @@ webrtc_ctx = webrtc_streamer(
     },
 )
 
-
-if webrtc_ctx.video_processor:
-    webrtc_ctx.video_processor.threshold1 = st.slider("Threshold1", min_value=0, max_value=1000, step=1, value=100)
-    webrtc_ctx.video_processor.threshold2 = st.slider("Threshold2", min_value=0, max_value=1000, step=1, value=200)
 
 
 ###### ここより下触らないで

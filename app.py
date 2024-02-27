@@ -6,6 +6,7 @@ try:
     load_dotenv()
 except ImportError:
     pass
+
 st.title("My first Streamlit app")
 st.write("Hello, world")
 
@@ -35,13 +36,12 @@ logger = logging.getLogger(__name__)
 RECORD_DIR = Path("./records")
 os.makedirs(RECORD_DIR, exist_ok=True)
 
+#初回
 if "talk_id" not in st.session_state:
     st.session_state["talk_id"] = str(uuid.uuid4())
     st.write("hello")
     st.session_state["sound_chunk"] = pydub.AudioSegment.empty()
 talk_id = st.session_state["talk_id"]
-
-
 
 
 
@@ -55,16 +55,8 @@ main_webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
 )
-# if not main_webrtc_ctx.video_receiver:
-#      main_webrtc_ctx.video_receiver.start()
 
 #  録音
-
-
-# def on_audio_ended():
-#     sound_chunk.export("test.wav", format="wav")
-#     logger.warning("Audio file is saved.")
-
 webrtc_ctx = webrtc_streamer(
     key="sendonly-audio",
     mode=WebRtcMode.SENDONLY,
@@ -73,25 +65,31 @@ webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
     media_stream_constraints={"audio": True},
-    # on_audio_ended=on_audio_ended
 )
 
-while webrtc_ctx.audio_receiver:
-    try:
-        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-    except queue.Empty:
-            logger.warning("Queue is empty. Abort.")
-            break
-    for audio_frame in audio_frames:
-            sound = pydub.AudioSegment(
-            data=audio_frame.to_ndarray().tobytes(),
-            sample_width=audio_frame.format.bytes,
-            frame_rate=audio_frame.sample_rate,
-            channels=len(audio_frame.layout.channels),
-            )
-            st.session_state["sound_chunk"] += sound
-            
-st.session_state["sound_chunk"].export(f"{str(RECORD_DIR)}/{st.session_state.talk_id}.wav", format="wav")
-logger.warning("Audio file is saved.")
-sound_chunk = pydub.AudioSegment.empty()
+while True:
+    if webrtc_ctx.state.playing:
+        if "is_first" not in st.session_state:
+            st.session_state["is_first"] = True
+        try:
+            audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+        except queue.Empty:
+                logger.warning("Queue is empty. Abort.")
+                break
+        for audio_frame in audio_frames:
+                sound = pydub.AudioSegment(
+                data=audio_frame.to_ndarray().tobytes(),
+                sample_width=audio_frame.format.bytes,
+                frame_rate=audio_frame.sample_rate,
+                channels=len(audio_frame.layout.channels),
+                )
+                st.session_state["sound_chunk"] += sound
+    else:
+        logger.warning("Audio receiver is not set. Abort.")
+        break
+#これだと、画面が開いた時にexportしてしまう
+if "is_first" not in st.session_state:
+    st.session_state["sound_chunk"].export(f"{str(RECORD_DIR)}/{st.session_state.talk_id}.wav", format="wav")
+    logger.warning("Audio file is saved.")
+    sound_chunk = pydub.AudioSegment.empty()
 st.session_state["talk_id"] = str(uuid.uuid4())

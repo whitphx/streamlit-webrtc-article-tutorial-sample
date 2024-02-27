@@ -54,9 +54,9 @@ main_webrtc_ctx = webrtc_streamer(
 
 #  録音
 sound_chunk = pydub.AudioSegment.empty()
-def on_audio_ended():
-    sound_chunk.export("test.wav", format="wav")
-    logger.warning("Audio file is saved.")
+# def on_audio_ended():
+#     sound_chunk.export("test.wav", format="wav")
+#     logger.warning("Audio file is saved.")
 
 webrtc_ctx = webrtc_streamer(
     key="sendonly-audio",
@@ -66,12 +66,12 @@ webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
     media_stream_constraints={"audio": True},
-    on_audio_ended=on_audio_ended
+    # on_audio_ended=on_audio_ended
 )
 
 while webrtc_ctx.audio_receiver:
     try:
-        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=2)
+        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
     except queue.Empty:
             logger.warning("Queue is empty. Abort.")
             break
@@ -83,4 +83,5 @@ while webrtc_ctx.audio_receiver:
             channels=len(audio_frame.layout.channels),
             )
             sound_chunk += sound
-
+sound_chunk.export("test.wav", format="wav")
+logger.warning("Audio file is saved.")

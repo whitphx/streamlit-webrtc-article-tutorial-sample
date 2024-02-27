@@ -110,14 +110,8 @@ while webrtc_ctx.audio_receiver:
             logger.warning("Queue is empty. Abort.")
             break
     for audio_frame in audio_frames:
-        sound = pydub.AudioSegment(
-        data=audio_frame.to_ndarray().tobytes(),
-        sample_width=audio_frame.format.bytes,
-        frame_rate=audio_frame.sample_rate,
-        channels=len(audio_frame.layout.channels),
-        )
-        st.session_state["sound_chunk"] += sound
-            
+        st.session_state["sound_chunk" ] += audio_frame.to_ndarray().tobytes(),
+        
 user_text = speech_to_text(st.session_state["sound_chunk"])
 state = get_state()
 generate_response(st.session_state["prompt"], st.session_state["questions"], user_text, state, handler)

@@ -3,6 +3,7 @@ import av
 import requests
 import os
 import speech_recognition as sr
+import pydub
 
 from langchain.memory import ConversationBufferMemory
 
@@ -28,10 +29,9 @@ def save_audio_frames_in_memory(opus_data):
     st.session_state[st.session_state["talk_id"]].append(frames)
     
     
-def speech_to_text(audio_frame: av.AudioFrame):
+def speech_to_text(audio_data):
     #AUDIO_FILEはpathを指定
     r = sr.Recognizer()
-    audio_data = audio_frame.to_ndarray().tobytes()
     text = r.recognize_whisper(
                 audio_data,
                 model='medium.en',

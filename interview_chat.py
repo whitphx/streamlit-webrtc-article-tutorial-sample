@@ -54,7 +54,7 @@ profile = {
 handler = SentenceCallbackHandler(**profile)
 
 
-def generate_response(prompt, questions, user_input, state, handler):
+def generate_response(prompt, questions, user_input, state, handler=SentenceCallbackHandler):
     llm = ChatOpenAI(streaming=True, temperature=0.9)
     conversation = ConversationChain(
         llm=llm,

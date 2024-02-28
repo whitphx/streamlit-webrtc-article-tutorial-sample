@@ -15,11 +15,8 @@ import uuid
 import queue
 import pydub
 import os
-from aiortc.contrib.media import MediaRecorder  # noqa: E402
 from langchain import PromptTemplate
 
-import av
-from pydub import AudioSegment
 import streamlit as st
 from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
@@ -115,7 +112,7 @@ if main_webrtc_ctx.state.playing:
     if len(st.session_state["sound_chunk"]) > 0:
         user_text = speech_to_text(st.session_state["sound_chunk"])
         state = get_state()
-        generate_response(st.session_state["prompt"], st.session_state["questions"], user_text, state, handler)
+        generate_response(st.session_state["prompt"], st.session_state["questions"], user_text, state)
         logger.warning("Audio file is saved.")
         sound_chunk = pydub.AudioSegment.empty()
         st.session_state["talk_id"] = str(uuid.uuid4())
@@ -123,3 +120,4 @@ if main_webrtc_ctx.state.playing:
         print("No sound is recorded.")
 else:
     st.write("ここに設定欄を書く")
+    

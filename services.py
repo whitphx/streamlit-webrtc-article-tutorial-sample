@@ -3,6 +3,8 @@ import av
 import requests
 import os
 import speech_recognition as sr
+import pydub
+import io
 
 from langchain.memory import ConversationBufferMemory
 
@@ -28,16 +30,20 @@ def save_audio_frames_in_memory(opus_data):
     st.session_state[st.session_state["talk_id"]].append(frames)
     
     
-def speech_to_text(audio_frame: av.AudioFrame):
-    #AUDIO_FILEはpathを指定
+def speech_to_text(audio_segment: pydub.AudioSegment):
+    extracted = audio_segment
+    buffer = io.BytesIO()
+    extracted.export(buffer, format="wav")
+    buffer.seek(0)
     r = sr.Recognizer()
-    audio_data = audio_frame.to_ndarray().tobytes()
-    text = r.recognize_whisper(
-                audio_data,
-                model='medium.en',
-                show_dict=True,
-                prompt="Umm, let me think like, hmm... Okay, here's what I'm, like, thinking.",
-            )['text']
+    with sr.AudioFile(buffer) as source:  
+        audio = r.record(source)
+        text = r.recognize_whisper(
+                    audio,
+                    model='medium.en',
+                    show_dict=True,
+                    prompt="Umm, let me think like, hmm... Okay, here's what I'm, like, thinking.",
+                )['text']
     return text
 
 

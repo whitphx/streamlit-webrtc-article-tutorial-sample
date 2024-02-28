@@ -9,6 +9,7 @@ import streamlit as st
 
 
 def generate_questions(recruitInfo, n_query, examples=None):
+    return ""
     instruction = f"Generate {n_query} questions which are likely to be asked in the interview at the following company. Please note that questions should be not common in all the company.:"
     template = """{instruction}\n{company}"""
     prompt = PromptTemplate(

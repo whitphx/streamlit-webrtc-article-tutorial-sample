@@ -5,9 +5,12 @@ from pathlib import Path
 import av
 import pydub
 import os
+import numpy as np
 
 
+import cv2
 import streamlit as st
+from PIL import Image
 
 
 RESPONSE_DIR = Path("./responses")
@@ -28,26 +31,19 @@ def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
     return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
-def silent_audio_frame(frame: av.AudioFrame) -> av.AudioFrame:
-    samples = frame.samples
-    sample_format = frame.format.name
-    channels = len(frame.layout.channels)
-    sample_rate = frame.sample_rate
-    
-    # 無音のデータを作成
-    silent_data = bytes(channels * samples * av.audio.sample_fmt_to_bytes(sample_format))
-
-    # 無音のav.AudioFrameを作成
-    silent_frame = av.AudioFrame(format=sample_format, layout='stereo', samples=samples, sample_rate=sample_rate)
-    
-    # 無音のデータをセット
-    silent_frame.planes[0].update(silent_data)
-    
-    return silent_frame
+def silent_audio_frame(sample_rate=48000, channels=2, sample_format="s16", samples=960):
+    # フレームの設定に基づいて無音データを生成
+    frame = av.AudioFrame(format=sample_format, layout='stereo', samples=samples)
+    frame.rate = sample_rate
+    # 無音データでフレームを埋める
+    silent_data = bytes(channels * samples * 2) # "s16"フォーマットは2バイト
+    for plane in frame.planes:
+        plane.update(silent_data)
+    return frame
 
 def audio_frame_callback(frame: av.AudioFrame) -> av.AudioFrame:
     if st.session_state.recording or "talk_id" not in st.session_state:
-        return silent_audio_frame(frame)
+        return silent_audio_frame()
     
     else :
         """

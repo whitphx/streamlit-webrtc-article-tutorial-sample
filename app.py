@@ -61,9 +61,10 @@ main_webrtc_ctx = webrtc_streamer(
     rtc_configuration={
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
-    desired_playing_state=st.session_state['is_interview_ongoing']
-    
+    desired_playing_state=st.session_state['is_interview_ongoing'],
+    media_stream_constraints={"video": True, "audio": True},
 )
+
 
 def on_change_recording():
      if main_webrtc_ctx.state.playing:
@@ -121,7 +122,7 @@ if main_webrtc_ctx.state.playing:
     if len(st.session_state["sound_chunk"]) > 0:
         user_text = speech_to_text(st.session_state["sound_chunk"])
         state = get_state()
-        generate_response(st.session_state["prompt"], st.session_state["questions"], user_text, state)
+        generate_response(st.session_state["prompt"], user_text, state)
         logger.warning("Audio file is saved.")
         sound_chunk = pydub.AudioSegment.empty()
         st.session_state["talk_id"] = str(uuid.uuid4())
@@ -156,17 +157,16 @@ else:
             st.write("Please fill in all the settings.")
 
 ###　ユーザー設定
-if "prompt" not in  st.session_state:
-    #評価基準によって質問の深掘り方が異なる可能性あり
-    template = """You are an interviewer. Ask the following questions and after each answer, ask more deeply according to it.
-    {questions}
-
-    Current conversation:
+if "questions" in st.session_state and "prompt" not in  st.session_state:
+    template = f"""You are an interviewer. Ask the following questions and after each answer, ask more deeply according to it.
+    {st.session_state["questions"]}""" + \
+    """Current conversation:
     {history}
     Interviewer: {input}
     Interviewee: """
-
+    questions = ""
     st.session_state["prompt"] = PromptTemplate(
-        input_variables=["questions","history","input"],
+        input_variables=["history","input"],
         template=template
     )
+

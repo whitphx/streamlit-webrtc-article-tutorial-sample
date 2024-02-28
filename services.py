@@ -13,7 +13,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 from langchain.memory import ConversationBufferMemory
 
 
-def save_audio_frames_in_memory(opus_data):
+def save_audio_frames_in_memory(states_obj, opus_data):
     FRAME_SETTINGS = {
             "samples": 960,
             "sample_format": "s16",
@@ -30,10 +30,11 @@ def save_audio_frames_in_memory(opus_data):
         frames.append(frame)
         index += FRAME_SETTINGS["samples"]
     
-    if st.session_state["talk_id"] not in st.session_state:
-        st.session_state[st.session_state["talk_id"]] = []
-    st.session_state[st.session_state["talk_id"]].append(frames)
-    
+    if states_obj.get_talk_id() not in states_obj.audios:
+        states_obj.audios[states_obj.get_talk_id()] = []
+    states_obj.audios[states_obj.get_talk_id()].append(frames)
+    while True:
+        logging.warning(len(states_obj.audios[states_obj.get_talk_id()]))
 
 def speech_to_text(audio_frame):
     return "dummy text for now."
@@ -49,8 +50,7 @@ def speech_to_text(audio_frame):
     return transcription.text
     """
 
-def text_to_speech(text, model='tts-1', voice='alloy', response_format="opus"):
-    return 
+def text_to_speech(state_obj, text, model='tts-1', voice='alloy', response_format="opus"):
     """" generate and send speech """
     logging.warning("start text to speech")
     api_key = os.getenv('OPENAI_API_KEY')
@@ -72,7 +72,7 @@ def text_to_speech(text, model='tts-1', voice='alloy', response_format="opus"):
     with requests.post(api_url, headers=headers, json=data, stream=True) as response:
         if response.status_code == 200:
             logging.warning("end text to speech")
-            save_audio_frames_in_memory(response.raw)
+            save_audio_frames_in_memory(state_obj, response.raw)
         else:
             response.raise_for_status()
             

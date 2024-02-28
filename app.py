@@ -58,9 +58,14 @@ if st.session_state['is_interview_ongoing']:
 elif not st.session_state['is_interview_finished']:
     if st.button("面接を開始する"):
         st.write("Settings confirmed")
-        if "company_name" in st.session_state and "position" in st.session_state and "desired_candidate_character" in st.session_state:
-            # Assuming generate_questions is a function that uses company name and position
-            st.session_state["questions"] = generate_questions(st.session_state["company_name"], n_query=5)
+        if "company_name" in st.session_state and "position" in st.session_state and "desired_candidate_character" in st.session_state and "additional_info" in st.session_state:
+            recruitInfo = {
+                "company_name": st.session_state["company_name"],
+                "position": st.session_state["position"],
+                "desired_candidate_character": st.session_state["desired_candidate_character"],
+                "additional_info": st.session_state["additional_info"],
+            }
+            st.session_state["questions"] = generate_questions(recruitInfo, n_query=5)
             st.write(st.session_state["questions"])
             st.write(st.session_state['is_interview_ongoing'])
             st.session_state['is_interview_ongoing'] = True
@@ -134,11 +139,12 @@ if not st.session_state['is_interview_finished']:
         print("No sound is recorded.")
 else:
     if st.session_state['is_interview_finished']: 
-        st.write("面接終了です！いかが評価でやんす")
+        st.write("面接終了です！以下が評価でやんす")
     else: 
         company_name = st.text_input("Company Name", value="")
         position = st.text_input("Position", value="")
         desired_candidate_character = st.text_area("Desired Candidate Character", value="")
+        additional_info = st.text_area("Additional Info", value="")
 
         # Update session state with the input values if needed
         if company_name:
@@ -147,5 +153,7 @@ else:
             st.session_state["position"] = position
         if desired_candidate_character:
             st.session_state["desired_candidate_character"] = desired_candidate_character
+        if additional_info:
+            st.session_state["additional_info"] = additional_info
 
     

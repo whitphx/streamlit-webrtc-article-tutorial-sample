@@ -155,12 +155,6 @@ else:
         else:
             st.write("Please fill in all the settings.")
 
-
-
-
-
-
-    
 ###　ユーザー設定
 if "prompt" not in  st.session_state:
     #評価基準によって質問の深掘り方が異なる可能性あり

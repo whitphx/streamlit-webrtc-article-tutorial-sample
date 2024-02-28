@@ -5,8 +5,13 @@ import os
 import speech_recognition as sr
 import pydub
 import io
+import logging
+import ssl
+import openai
+ssl._create_default_https_context = ssl._create_unverified_context
 
 from langchain.memory import ConversationBufferMemory
+
 
 def save_audio_frames_in_memory(opus_data):
     FRAME_SETTINGS = {
@@ -29,26 +34,21 @@ def save_audio_frames_in_memory(opus_data):
         st.session_state[st.session_state["talk_id"]] = []
     st.session_state[st.session_state["talk_id"]].append(frames)
     
-    
-def speech_to_text(audio_segment: pydub.AudioSegment):
-    extracted = audio_segment
-    buffer = io.BytesIO()
-    extracted.export(buffer, format="wav")
-    buffer.seek(0)
-    r = sr.Recognizer()
-    with sr.AudioFile(buffer) as source:  
-        audio = r.record(source)
-        text = r.recognize_whisper(
-                    audio,
-                    model='medium.en',
-                    show_dict=True,
-                    prompt="Umm, let me think like, hmm... Okay, here's what I'm, like, thinking.",
-                )['text']
-    return text
 
+def speech_to_text(audio_frame):
+    buffer = io.BytesIO()
+    audio_frame.export(buffer, format='wav')
+    buffer.name = 'file.wav'
+    transcription = openai.audio.transcriptions.create(
+        model='whisper-1',
+        file=buffer,
+        prompt="Umm, let me think like, hmm... Okay, here's what I'm, like, thinking."
+    )
+    return transcription.text
 
 def text_to_speech(text, model='tts-1', voice='alloy', response_format="opus"):
     """" generate and send speech """
+    logging.warning("start text to speech")
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable not set")
@@ -67,6 +67,7 @@ def text_to_speech(text, model='tts-1', voice='alloy', response_format="opus"):
 
     with requests.post(api_url, headers=headers, json=data, stream=True) as response:
         if response.status_code == 200:
+            logging.warning("end text to speech")
             save_audio_frames_in_memory(response.raw)
         else:
             response.raise_for_status()

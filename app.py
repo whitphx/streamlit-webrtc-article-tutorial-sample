@@ -67,11 +67,26 @@ elif not st.session_state['is_interview_finished']:
             }
             st.session_state["questions"] = generate_questions(recruitInfo, n_query=5)
             st.write(st.session_state["questions"])
+            ###　ユーザー設定
+            if "questions" in st.session_state and "prompt" not in  st.session_state:
+                template = f"""You are an interviewer. Ask the following questions and after each answer, ask more deeply according to it.
+                {st.session_state["questions"]}""" + \
+                """Current conversation:
+                {history}
+                Interviewer: {input}
+                Interviewee: """
+                questions = ""
+                st.session_state["prompt"] = PromptTemplate(
+                    input_variables=["history","input"],
+                    template=template
+                )
             st.write(st.session_state['is_interview_ongoing'])
             st.session_state['is_interview_ongoing'] = True
             st.write(st.session_state['is_interview_ongoing'])
         else:
             st.write("Please fill in all the settings.")
+else:
+    st.write("評価でやんす")
 
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
@@ -109,79 +124,36 @@ if not st.session_state['is_interview_finished']:
         st.write(st.session_state['is_recording'])
         
 
-    while True:
-        if webrtc_ctx.state.playing:
-            try:
-                audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-            except queue.Empty:
-                    logger.warning("Queue is empty. Abort.")
-                    break
-            for audio_frame in audio_frames:
-                    sound = pydub.AudioSegment(
-                    data=audio_frame.to_ndarray().tobytes(),
-                    sample_width=audio_frame.format.bytes,
-                    frame_rate=audio_frame.sample_rate,
-                    channels=len(audio_frame.layout.channels),
-                    )
-                    st.session_state["sound_chunk"] += sound
-        else:
-            logger.warning("Audio receiver is not set. Abort.")
-            break
+        while True:
+            if webrtc_ctx.state.playing:
+                try:
+                    audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+                except queue.Empty:
+                        logger.warning("Queue is empty. Abort.")
+                        break
+                for audio_frame in audio_frames:
+                        sound = pydub.AudioSegment(
+                        data=audio_frame.to_ndarray().tobytes(),
+                        sample_width=audio_frame.format.bytes,
+                        frame_rate=audio_frame.sample_rate,
+                        channels=len(audio_frame.layout.channels),
+                        )
+                        st.session_state["sound_chunk"] += sound
+            else:
+                logger.warning("Audio receiver is not set. Abort.")
+                break
 
-    if len(st.session_state["sound_chunk"]) > 0:
-        user_text = speech_to_text(st.session_state["sound_chunk"])
-        state = get_state()
-        generate_response(st.session_state["prompt"], user_text, state)
-        logger.warning("Audio file is saved.")
-        sound_chunk = pydub.AudioSegment.empty()
-        st.session_state["talk_id"] = str(uuid.uuid4())
+        if len(st.session_state["sound_chunk"]) > 0:
+            user_text = speech_to_text(st.session_state["sound_chunk"])
+            state = get_state()
+            generate_response(st.session_state["prompt"], user_text, state)
+            logger.warning("Audio file is saved.")
+            sound_chunk = pydub.AudioSegment.empty()
+            st.session_state["talk_id"] = str(uuid.uuid4())
+        else:
+            print("No sound is recorded.")
     else:
-        print("No sound is recorded.")
-else:
-    st.write("Settings")
-    
-    company_name = st.text_input("Company Name", value="")
-    position = st.text_input("Position", value="")
-    desired_candidate_character = st.text_area("Desired Candidate Character", value="")
-
-    # Update session state with the input values if needed
-    if company_name:
-        st.session_state["company_name"] = company_name
-    if position:
-        st.session_state["position"] = position
-    if desired_candidate_character:
-        st.session_state["desired_candidate_character"] = desired_candidate_character
-
-    # Optionally, a button to confirm the inputs and proceed with the operations
-    if st.button("設定を完了する"):
-        st.write("Settings confirmed")
-        if "company_name" in st.session_state and "position" in st.session_state and "desired_candidate_character" in st.session_state:
-            # Assuming generate_questions is a function that uses company name and position
-            st.session_state["questions"] = generate_questions(st.session_state["company_name"], n_query=5)
-            st.write(st.session_state["questions"])
-            st.write(st.session_state['is_interview_ongoing'])
-            st.session_state['is_interview_ongoing'] = True
-            st.write(st.session_state['is_interview_ongoing'])
-        else:
-            st.write("Please fill in all the settings.")
-
-###　ユーザー設定
-if "questions" in st.session_state and "prompt" not in  st.session_state:
-    template = f"""You are an interviewer. Ask the following questions and after each answer, ask more deeply according to it.
-    {st.session_state["questions"]}""" + \
-    """Current conversation:
-    {history}
-    Interviewer: {input}
-    Interviewee: """
-    questions = ""
-    st.session_state["prompt"] = PromptTemplate(
-        input_variables=["history","input"],
-        template=template
-    )
-
-    if st.session_state['is_interview_finished']: 
-        st.write("面接終了です！以下が評価でやんす")
-    else: 
+        st.write("Settings")
         company_name = st.text_input("Company Name", value="")
         position = st.text_input("Position", value="")
         desired_candidate_character = st.text_area("Desired Candidate Character", value="")
@@ -197,4 +169,4 @@ if "questions" in st.session_state and "prompt" not in  st.session_state:
         if additional_info:
             st.session_state["additional_info"] = additional_info
 
-    
+        

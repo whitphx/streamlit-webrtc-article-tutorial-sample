@@ -29,7 +29,7 @@ class SentenceCallbackHandler(BaseCallbackHandler):
 
     def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
         """Run on new LLM token. Only available when streaming is enabled."""
-        self.sentence += token
+        self.sentence += str(token)
 
         #一文になったら非同期でself.sentenceをtext_to_speechに(下は仮)
         if token in ['.','?','!']:

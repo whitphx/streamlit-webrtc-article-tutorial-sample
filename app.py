@@ -40,65 +40,74 @@ if "talk_id" not in st.session_state:
     st.write("hello")
     st.session_state["sound_chunk"] = pydub.AudioSegment.empty()
     st.session_state["is_recording"] = False
+    st.session_state["is_interview_finished"] = False#移したほうがいいかも
 talk_id = st.session_state["talk_id"]
 
 if 'is_interview_ongoing' not in st.session_state:
     st.session_state['is_interview_ongoing'] = False
 
+
 def on_interview_finished():
         logger.warning("面接を終了")
         st.session_state['is_interview_ongoing'] = False
         logger.warning(st.session_state['is_interview_ongoing'])
-st.button("面接終了", on_click=on_interview_finished)
+        st.session_state['is_interview_finished'] = True
+        
+if st.session_state['is_interview_ongoing']:
+    st.button("面接終了", on_click=on_interview_finished)
+elif not st.session_state['is_interview_finished']:
+    if st.button("面接を開始する"):
+        st.write("Settings confirmed")
+        if "company_name" in st.session_state and "position" in st.session_state and "desired_candidate_character" in st.session_state and "additional_info" in st.session_state:
+            recruitInfo = {
+                "company_name": st.session_state["company_name"],
+                "position": st.session_state["position"],
+                "desired_candidate_character": st.session_state["desired_candidate_character"],
+                "additional_info": st.session_state["additional_info"],
+            }
+            st.session_state["questions"] = generate_questions(recruitInfo, n_query=5)
+            st.write(st.session_state["questions"])
+            st.write(st.session_state['is_interview_ongoing'])
+            st.session_state['is_interview_ongoing'] = True
+            st.write(st.session_state['is_interview_ongoing'])
+        else:
+            st.write("Please fill in all the settings.")
 
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
-main_webrtc_ctx = webrtc_streamer(
-    key="mock",
-    mode=WebRtcMode.SENDRECV,
-    video_frame_callback=video_frame_callback, # 画像をそのまま返す
-    audio_frame_callback=audio_frame_callback, # 音声ファイルからframeにして返す
-    rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    },
-    desired_playing_state=st.session_state['is_interview_ongoing'],
-    media_stream_constraints={"video": True, "audio": True},
-)
-
-
-def on_change_recording():
-     if main_webrtc_ctx.state.playing:
-        logger.warning("発言を開始")
-        st.session_state['is_recording'] = True
-        logger.warning(st.session_state['is_recording'])
-    
-def on_audio_ended():
-    if not main_webrtc_ctx.state.playing:
-        logger.warning("発言を終了")
-        st.session_state['is_recording'] = False
-        logger.warning(st.session_state['is_recording'])
-
-
-if main_webrtc_ctx.state.playing:
-    st.write("recording")
-    #  録音
-    webrtc_ctx = webrtc_streamer(
-        key="sendonly-audio",
-        mode=WebRtcMode.SENDONLY,
-        audio_receiver_size=256,
+if not st.session_state['is_interview_finished']:
+    main_webrtc_ctx = webrtc_streamer(
+        key="mock",
+        mode=WebRtcMode.SENDRECV,
+        video_frame_callback=video_frame_callback, # 画像をそのまま返す
+        audio_frame_callback=audio_frame_callback, # 音声ファイルからframeにして返す
         rtc_configuration={
             "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
         },
-        media_stream_constraints={"audio": True},
-        on_change=on_change_recording,
-        on_audio_ended=on_audio_ended,
-        translations={
-            "start": "録音開始",
-            "stop": "録音終了",
-        }
-    )
-    st.write(st.session_state['is_recording'])
-    
+        desired_playing_state=st.session_state['is_interview_ongoing']
+        
+)
+
+
+    if main_webrtc_ctx.state.playing:
+        st.write("recording")
+        #  録音
+        webrtc_ctx = webrtc_streamer(
+            key="sendonly-audio",
+            mode=WebRtcMode.SENDONLY,
+            audio_receiver_size=256,
+            rtc_configuration={
+                "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+            },
+            media_stream_constraints={"audio": True},
+            translations={
+                "start": "録音開始",
+                "stop": "録音終了",
+            }
+        )
+        st.session_state['is_recording'] = webrtc_ctx.state.playing
+        st.write(st.session_state['is_recording'])
+        
 
     while True:
         if webrtc_ctx.state.playing:
@@ -170,3 +179,22 @@ if "questions" in st.session_state and "prompt" not in  st.session_state:
         template=template
     )
 
+    if st.session_state['is_interview_finished']: 
+        st.write("面接終了です！以下が評価でやんす")
+    else: 
+        company_name = st.text_input("Company Name", value="")
+        position = st.text_input("Position", value="")
+        desired_candidate_character = st.text_area("Desired Candidate Character", value="")
+        additional_info = st.text_area("Additional Info", value="")
+
+        # Update session state with the input values if needed
+        if company_name:
+            st.session_state["company_name"] = company_name
+        if position:
+            st.session_state["position"] = position
+        if desired_candidate_character:
+            st.session_state["desired_candidate_character"] = desired_candidate_character
+        if additional_info:
+            st.session_state["additional_info"] = additional_info
+
+    

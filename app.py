@@ -18,7 +18,7 @@ from langchain import PromptTemplate
 import streamlit as st
 from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
-from callbacks import video_frame_callback, audio_frame_callback, RESPONSE_DIR
+from callbacks import video_frame_callback, RESPONSE_DIR, audio_frame_callback
 from services import save_audio_frames_in_memory, speech_to_text, get_state
 from generate_questions import generate_questions
 from interview_chat import generate_response
@@ -36,11 +36,12 @@ os.makedirs(RESPONSE_DIR, exist_ok=True)
 
 #初回
 if "talk_id" not in st.session_state:
-    st.session_state["talk_id"] = str(uuid.uuid4())
+    st.session_state["talk_id"] = None
     st.write("hello")
     st.session_state["sound_chunk"] = pydub.AudioSegment.empty()
     st.session_state["is_recording"] = False
     st.session_state["is_interview_finished"] = False#移したほうがいいかも
+    st.session_state["count"] = 0
 talk_id = st.session_state["talk_id"]
 
 if 'is_interview_ongoing' not in st.session_state:
@@ -87,8 +88,7 @@ elif not st.session_state['is_interview_finished']:
             st.write("Please fill in all the settings.")
 else:
     st.write("評価でやんす")
-
-
+    
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 if not st.session_state['is_interview_finished']:
     main_webrtc_ctx = webrtc_streamer(
@@ -99,8 +99,8 @@ if not st.session_state['is_interview_finished']:
         rtc_configuration={
             "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
         },
-        desired_playing_state=st.session_state['is_interview_ongoing']
-        
+        desired_playing_state=st.session_state['is_interview_ongoing'],
+        media_stream_constraints={"video": True, "audio": True},
 )
 
 
@@ -120,12 +120,17 @@ if not st.session_state['is_interview_finished']:
                 "stop": "録音終了",
             }
         )
-        st.session_state['is_recording'] = webrtc_ctx.state.playing
+        if not st.session_state["is_recording"]:
+            st.session_state['is_recording'] = webrtc_ctx.state.playing
+            st.session_state['count'] += 1
+            st.write(st.session_state['count'])
         st.write(st.session_state['is_recording'])
         
 
         while True:
             if webrtc_ctx.state.playing:
+                if st.session_state["talk_id"] is None:
+                    st.session_state["talk_id"] = str(uuid.uuid4())
                 try:
                     audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
                 except queue.Empty:
@@ -149,7 +154,7 @@ if not st.session_state['is_interview_finished']:
             generate_response(st.session_state["prompt"], user_text, state)
             logger.warning("Audio file is saved.")
             sound_chunk = pydub.AudioSegment.empty()
-            st.session_state["talk_id"] = str(uuid.uuid4())
+            st.session_state["talk_id"] = None
         else:
             print("No sound is recorded.")
     else:

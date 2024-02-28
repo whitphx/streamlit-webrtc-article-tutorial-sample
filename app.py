@@ -97,8 +97,8 @@ else:
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 if not st.session_state['is_interview_finished']:
-    state = StatesObject()
-    audio_frame_callback = AudioFrameCallback(state)
+    state_obj = StatesObject()
+    audio_frame_callback = AudioFrameCallback(state_obj)
     main_webrtc_ctx = webrtc_streamer(
         key="mock",
         mode=WebRtcMode.SENDRECV,
@@ -137,8 +137,8 @@ if not st.session_state['is_interview_finished']:
 
         while True:
             if webrtc_ctx.state.playing:
-                if state.get_talk_id() is None:
-                    state.set_talk_id(str(uuid.uuid4()))
+                if state_obj.get_talk_id() is None:
+                    state_obj.set_talk_id(str(uuid.uuid4()))
                 try:
                     audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
                 except queue.Empty:
@@ -159,7 +159,7 @@ if not st.session_state['is_interview_finished']:
         if len(st.session_state["sound_chunk"]) > 0:
             user_text = speech_to_text(st.session_state["sound_chunk"])
             state = get_state()
-            generate_response(st.session_state["prompt"], user_text, state)
+            generate_response(st.session_state["prompt"], user_text, state, state_obj)
             logger.warning("Audio file is saved.")
             sound_chunk = pydub.AudioSegment.empty()
             st.session_state["talk_id"] = None

@@ -20,7 +20,8 @@ import speech_recognition as sr
 class SentenceCallbackHandler(BaseCallbackHandler):
     """ Sentence Callback Handler """
 
-    def __init__(self, model='tts-1', voice='alloy', response_format="opus") -> None:
+    def __init__(self, state_obj, model='tts-1', voice='alloy', response_format="opus") -> None:
+        self.state_obj= state_obj
         self.sentence = ''
         self.model = model
         self.voice = voice
@@ -33,12 +34,13 @@ class SentenceCallbackHandler(BaseCallbackHandler):
         #一文になったら非同期でself.sentenceをtext_to_speechに(下は仮)
         if token in ['.','?','!']:
             #print(self.sentence)
-            text_to_speech(self.sentence, self.model, self.voice, self.response_format)
+            text_to_speech(self.state_obj, self.sentence, self.model, self.voice, self.response_format)
             self.sentence = ''
             
     def on_llm_end(self, response, **kwargs: Any) -> None:
         """Run on LLM end. Only available when streaming is enabled."""
-        st.session_state["is_finished"] = True
+        st.write(response)
+        self.state_obj.set_is_finished(True)
         
 
 
@@ -50,11 +52,8 @@ profile = {
 }
 
 
-
-handler = SentenceCallbackHandler(**profile)
-
-
-def generate_response(prompt, user_input, state, handler=handler):
+def generate_response(prompt, user_input, state, state_obj):
+    handler = SentenceCallbackHandler(state_obj, **profile)
     llm = ChatOpenAI(streaming=True, temperature=0.9, callbacks=[handler])
     conversation = LLMChain(
         llm=llm,
@@ -62,4 +61,4 @@ def generate_response(prompt, user_input, state, handler=handler):
         memory=state['memory']
     )
     res = conversation.predict(input=user_input)
-    return None
+    return res

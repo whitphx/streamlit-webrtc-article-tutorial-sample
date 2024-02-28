@@ -5,6 +5,7 @@ class StatesObject:
         self.is_finished = False
         self.file_number = 0
         self.frame_number = 0
+        self.audios = {}
         
     def get_is_recpording(self):
         return self.is_recpording
@@ -14,3 +15,10 @@ class StatesObject:
     
     def set_talk_id(self, talk_id):
         self.talk_id = talk_id
+        
+    def get_is_finished(self):
+        return self.is_finished
+    
+    def set_is_finished(self, is_finished):
+        self.is_finished = is_finished
+    

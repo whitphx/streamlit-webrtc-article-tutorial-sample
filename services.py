@@ -36,6 +36,8 @@ def save_audio_frames_in_memory(opus_data):
     
 
 def speech_to_text(audio_frame):
+    return "dummy text for now."
+    """
     buffer = io.BytesIO()
     audio_frame.export(buffer, format='wav')
     buffer.name = 'file.wav'
@@ -45,8 +47,10 @@ def speech_to_text(audio_frame):
         prompt="Umm, let me think like, hmm... Okay, here's what I'm, like, thinking."
     )
     return transcription.text
+    """
 
 def text_to_speech(text, model='tts-1', voice='alloy', response_format="opus"):
+    return 
     """" generate and send speech """
     logging.warning("start text to speech")
     api_key = os.getenv('OPENAI_API_KEY')

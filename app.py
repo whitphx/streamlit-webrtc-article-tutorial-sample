@@ -18,15 +18,18 @@ from langchain import PromptTemplate
 import streamlit as st
 from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
-from callbacks import video_frame_callback, RESPONSE_DIR, audio_frame_callback
+from callbacks import video_frame_callback, RESPONSE_DIR, AudioFrameCallback
 from services import save_audio_frames_in_memory, speech_to_text, get_state
 from generate_questions import generate_questions
 from interview_chat import generate_response
+
+from states import StatesObject
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
 
 logger = logging.getLogger(__name__)
+
 
 
 #　録音周りの設定
@@ -43,6 +46,8 @@ if "talk_id" not in st.session_state:
     st.session_state["is_interview_finished"] = False#移したほうがいいかも
     st.session_state["count"] = 0
 talk_id = st.session_state["talk_id"]
+st.write(st.session_state["talk_id"])
+
 
 if 'is_interview_ongoing' not in st.session_state:
     st.session_state['is_interview_ongoing'] = False
@@ -88,9 +93,12 @@ elif not st.session_state['is_interview_finished']:
             st.write("Please fill in all the settings.")
 else:
     st.write("評価でやんす")
-    
+
+
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 if not st.session_state['is_interview_finished']:
+    state = StatesObject()
+    audio_frame_callback = AudioFrameCallback(state)
     main_webrtc_ctx = webrtc_streamer(
         key="mock",
         mode=WebRtcMode.SENDRECV,
@@ -129,8 +137,8 @@ if not st.session_state['is_interview_finished']:
 
         while True:
             if webrtc_ctx.state.playing:
-                if st.session_state["talk_id"] is None:
-                    st.session_state["talk_id"] = str(uuid.uuid4())
+                if state.get_talk_id() is None:
+                    state.set_talk_id(str(uuid.uuid4()))
                 try:
                     audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
                 except queue.Empty:

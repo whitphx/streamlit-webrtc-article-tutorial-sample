@@ -46,7 +46,7 @@ class AudioFrameCallback:
         self.state_obj = state_obj
     
     def __call__(self, frame: av.AudioFrame) -> av.AudioFrame:
-        if self.state_obj.talk_id is None:
+        if self.state_obj.talk_id is None or self.state_obj.is_recording:
             logging.warning("talk_id is None")
             return silent_audio_frame()
         
@@ -73,17 +73,31 @@ class AudioFrameCallback:
                 ・frame_number: 再生している音声ファイルのフレーム位置
                 ・is_finished: 返信音声が全てファイルかされているかどうか
             """
-        logging.warning("start audio frame callback listening!!")
-        return frame
-        stream_frame = self.state_obj["audios"][self.state_obj.talk_id][self.state_obj.file_number][self.state_obj.frame_number]
-        if self.state_obj.file_number <  len(self.state_obj["audios"][self.state_obj.talk_id][self.state_obj.file_number])-1:
+        try:
+            stream_frame = self.state_obj["audios"][self.state_obj.talk_id][self.state_obj.file_number][self.state_obj.frame_number]
+            logging.warning("streaming!!")
+        except:
+            return silent_audio_frame()  ##honraiha
+        if self.state_obj.frame_number <  len(self.state_obj["audios"][self.state_obj.talk_id][self.state_obj.file_number])-1:
             self.state_obj.frame_number += 1
         elif self.state_obj.file_number < len(self.state_obj["audios"][self.state_obj.talk_id])-1:
+            logging.warning("totyu")
             self.state_obj.file_number += 1
             self.state_obj.frame_number = 0
         else:
+            logging.warning("finished")
+            frames = silent_audio_frame()
+            frames_byte = np.frombuffer(frames.planes[0].to_bytes(), np.int16)
+            for file in self.state_obj["audios"][self.state_obj.talk_id]:
+                for frame in file:
+                    frames_byte = np.concatenate([frames_byte, np.frombuffer(frame.planes[0].to_bytes(), np.int16)])
+                    
+            np.save('array.npy', frames_byte)
             self.state_obj.file_number = 0
             self.state_obj.frame_number = 0
-            return silent_audio_frame(frame)
+            return silent_audio_frame()
         
+        logging.warning(str(type(stream_frame)))
+        logging.warning("file number: %d", self.state_obj.file_number)
+        logging.warning("frame number: %d", self.state_obj.frame_number)
         return stream_frame

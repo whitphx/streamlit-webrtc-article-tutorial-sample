@@ -27,9 +27,11 @@ def save_audio_frames_in_memory(states_obj, opus_data: bytes):
         # サンプル数ごとにデータを取得
         data_chunk = opus_data[index:index + FRAME_SETTINGS["samples"]*4]
         # オーディオフレームに変換してリストに追加
-        array = np.frombuffer(data_chunk, dtype=np.int16)
-        reshaped_array = np.expand_dims(array, axis=0)
-        frame = av.AudioFrame.from_ndarray(reshaped_array, format='s16', layout='stereo')
+        if len(data_chunk) < FRAME_SETTINGS["samples"]*4:
+            break    
+        # このコードブロックは仮の例であり、実際のデータ構造に合わせて適宜調整してください。
+        array = np.frombuffer(data_chunk, dtype=np.int16).reshape(2, -1)  # ステレオの場合
+        frame = av.AudioFrame.from_ndarray(array, format='s16', layout='stereo')
         frames.append(frame)
         index += FRAME_SETTINGS["samples"]
     

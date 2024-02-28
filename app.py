@@ -23,7 +23,7 @@ from services import save_audio_frames_in_memory, speech_to_text, get_state
 from generate_questions import generate_questions
 from generate_eval import generate_eval
 from interview_chat import generate_response
-from interview_eval import eval
+#from interview_eval import eval
 
 from states import StatesObject
 from common_questions import common_questions
@@ -113,8 +113,9 @@ else:
 
 
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
-if not st.session_state['is_interview_finished']:
+if not st.session_state['is_interview_finished']:    
     state_obj = StatesObject()
+    state_obj.set_talk_id(st.session_state["talk_id"])
     audio_frame_callback = AudioFrameCallback(state_obj)
     main_webrtc_ctx = webrtc_streamer(
         key="mock",
@@ -155,7 +156,8 @@ if not st.session_state['is_interview_finished']:
         while True:
             if webrtc_ctx.state.playing:
                 if state_obj.get_talk_id() is None:
-                    state_obj.set_talk_id(str(uuid.uuid4()))
+                    st.session_state["talk_id"] = str(uuid.uuid4())
+                    state_obj.set_talk_id(st.session_state["talk_id"])
                 try:
                     audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
                 except queue.Empty:
@@ -179,7 +181,8 @@ if not st.session_state['is_interview_finished']:
             if not st.session_state["is_started"]:
                 st.session_state["is_started"] = True
             
-            generate_response(st.session_state["prompt"], user_text, state, state_obj)
+            result_area = st.empty()
+            generate_response(st.session_state["prompt"], user_text, state, state_obj, result_area)
             logger.warning("Audio file is saved.")
             sound_chunk = pydub.AudioSegment.empty()
             st.session_state["talk_id"] = None

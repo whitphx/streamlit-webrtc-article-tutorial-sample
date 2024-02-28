@@ -1,11 +1,12 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer
-
+import time
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     pass
+
 
 import pydub
 import logging
@@ -27,10 +28,6 @@ from services import save_audio_frames_in_memory, speech_to_text, get_state
 from generate_questions import generate_questions
 from interview_chat import generate_response
 
-"""Media streamings"""
-st.title("My first Streamlit app")
-st.write("Hello, world")
-
 HERE = Path(__file__).parent
 ROOT = HERE.parent
 
@@ -42,6 +39,7 @@ RECORD_DIR = Path("./records")
 os.makedirs(RECORD_DIR, exist_ok=True)
 os.makedirs(RESPONSE_DIR, exist_ok=True)
 
+#初回
 if "talk_id" not in st.session_state:
     st.session_state["talk_id"] = str(uuid.uuid4())
     st.write("hello")
@@ -70,8 +68,6 @@ if "question" not in  st.session_state:
     st.session_state["question"] = generate_questions(company, n_query)
 
 
-
-
 ###　ここのコンポーネントでは、ファイルから音声をストリーミングするのと、カメラで読み取った映像を（そのまま）流すことができる。　
 main_webrtc_ctx = webrtc_streamer(
     key="mock",
@@ -82,45 +78,48 @@ main_webrtc_ctx = webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     },
 )
-# if not main_webrtc_ctx.video_receiver:
-#      main_webrtc_ctx.video_receiver.start()
 
-#  録音
+if main_webrtc_ctx.state.playing:
+    st.write("recording")
+    #  録音
+    webrtc_ctx = webrtc_streamer(
+        key="sendonly-audio",
+        mode=WebRtcMode.SENDONLY,
+        audio_receiver_size=256,
+        rtc_configuration={
+            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+        },
+        media_stream_constraints={"audio": True},
+    )
 
-
-# def on_audio_ended():
-#     sound_chunk.export("test.wav", format="wav")
-#     logger.warning("Audio file is saved.")
-
-webrtc_ctx = webrtc_streamer(
-    key="sendonly-audio",
-    mode=WebRtcMode.SENDONLY,
-    audio_receiver_size=256,
-    rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    },
-    media_stream_constraints={"audio": True},
-    # on_audio_ended=on_audio_ended
-)
-
-while webrtc_ctx.audio_receiver:
-    try:
-        audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-    except queue.Empty:
-            logger.warning("Queue is empty. Abort.")
+    while True:
+        if webrtc_ctx.state.playing:
+            #st.session_state["is_first"] = True
+            try:
+                audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+            except queue.Empty:
+                    logger.warning("Queue is empty. Abort.")
+                    break
+            for audio_frame in audio_frames:
+                    sound = pydub.AudioSegment(
+                    data=audio_frame.to_ndarray().tobytes(),
+                    sample_width=audio_frame.format.bytes,
+                    frame_rate=audio_frame.sample_rate,
+                    channels=len(audio_frame.layout.channels),
+                    )
+                    st.session_state["sound_chunk"] += sound
+        else:
+            logger.warning("Audio receiver is not set. Abort.")
             break
-    for audio_frame in audio_frames:
-        sound = pydub.AudioSegment(
-        data=audio_frame.to_ndarray().tobytes(),
-        sample_width=audio_frame.format.bytes,
-        frame_rate=audio_frame.sample_rate,
-        channels=len(audio_frame.layout.channels),
-        )
-        st.session_state["sound_chunk"] += sound
-            
-user_text = speech_to_text(st.session_state["sound_chunk"])
-state = get_state()
-generate_response(st.session_state["prompt"], st.session_state["questions"], user_text, state, handler)
-logger.warning("Audio file is saved.")
-sound_chunk = pydub.AudioSegment.empty()
-st.session_state["talk_id"] = str(uuid.uuid4())
+
+    if len(st.session_state["sound_chunk"]) > 0:
+        user_text = speech_to_text(st.session_state["sound_chunk"])
+        state = get_state()
+        generate_response(st.session_state["prompt"], st.session_state["questions"], user_text, state, handler)
+        logger.warning("Audio file is saved.")
+        sound_chunk = pydub.AudioSegment.empty()
+        st.session_state["talk_id"] = str(uuid.uuid4())
+    else:
+        print("No sound is recorded.")
+else:
+    st.write("ここに設定欄を書く")

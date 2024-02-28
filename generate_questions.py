@@ -5,33 +5,26 @@ from langchain.llms import OpenAI
 from langchain.output_parsers import PydanticOutputParser
 from typing import List
 import json
-
-class Company(BaseModel):
-    """事前情報として与えたい会社情報"""
-    pass
-
-class ES(BaseModel):
-    """エントリーシート"""
-    pass
+import streamlit as st
 
 
-def generate_questions(company, n_query, examples=None):
-    instruction = f"Generate {n_query} questions which are likely to be asked in the interview at the following company:"
+def generate_questions(recruitInfo, n_query, examples=None):
+    instruction = f"Generate {n_query} questions which are likely to be asked in the interview at the following company. Please note that questions should be not common in all the company.:"
     template = """{instruction}\n{company}"""
     prompt = PromptTemplate(
         template=template,
         input_variables=["instruction","company"],
-    ).format_prompt(instruction=instruction, company=company)
+    ).format_prompt(instruction=instruction, company=json.dumps(recruitInfo))
     llm = OpenAI(temperature=1)
     output = llm(prompt.to_string())
     return output
 
 
 n_query = 5
-company_attributes = {
-    'name': "Softbank",
-    #and so on
+st.session_state['company_attributes'] = {
+    'name': "softbank",
+    'position' : "Data Scientist",
+    'required_personalities' : 'team player, self-starter, problem solver',
 }
 
-company = Company(**company_attributes)
-questions = generate_questions(company, n_query)
+questions = generate_questions(st.session_state['company_attributes'], n_query)

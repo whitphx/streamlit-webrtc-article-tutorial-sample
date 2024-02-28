@@ -36,7 +36,7 @@ class SentenceCallbackHandler(BaseCallbackHandler):
             text_to_speech(self.sentence, self.model, self.voice, self.response_format)
             self.sentence = ''
             
-    def on_llm_end(self, **kwargs: Any) -> None:
+    def on_llm_end(self, response, **kwargs: Any) -> None:
         """Run on LLM end. Only available when streaming is enabled."""
         st.session_state["is_finished"] = True
         
@@ -54,12 +54,12 @@ profile = {
 handler = SentenceCallbackHandler(**profile)
 
 
-def generate_response(prompt, questions, user_input, state, handler=SentenceCallbackHandler):
-    llm = ChatOpenAI(streaming=True, temperature=0.9)
-    conversation = ConversationChain(
+def generate_response(prompt, user_input, state, handler=handler):
+    llm = ChatOpenAI(streaming=True, temperature=0.9, callbacks=[handler])
+    conversation = LLMChain(
         llm=llm,
         prompt=prompt,
         memory=state['memory']
     )
-    res = conversation.predict(questions=questions, input=user_input, callback=[handler])
+    res = conversation.predict(input=user_input)
     return None

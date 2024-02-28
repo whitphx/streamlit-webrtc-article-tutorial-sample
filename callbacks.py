@@ -42,16 +42,15 @@ def silent_audio_frame(sample_rate=48000, channels=2, sample_format="s16", sampl
     return frame
 
 class AudioFrameCallback:
-    def __init__(self, state):
-        self.state = state
+    def __init__(self, state_obj):
+        self.state_obj = state_obj
     
     def __call__(self, frame: av.AudioFrame) -> av.AudioFrame:
-        if self.state.get_talk_id() is None:
+        if self.state_obj.talk_id is None:
+            logging.warning("talk_id is None")
             return silent_audio_frame()
         
         else :
-            logger.warning("talk_uuid", self.state.get_talk_id())
-            return frame
             """
                 ここで行われること
                 ・現在流している音声ファイルとその位置を把握
@@ -74,24 +73,17 @@ class AudioFrameCallback:
                 ・frame_number: 再生している音声ファイルのフレーム位置
                 ・is_finished: 返信音声が全てファイルかされているかどうか
             """
-        if "file_number" not in self.state:
-            self.state["file_number"] = 0
-        if "frame_number" not in self.state:
-            self.state["frame_number"] = 0
-        if "is_finished" not in self.state:
-            self.state["is_finished"] = False
-        
-        
-        stream_frame = self.state[self.state["talk_id"]][self.state["file_number"]][self.state["frame_number"]]
-        if self.state["frame_number"] <  len(self.state[self.state["talk_id"]][self.state["file_number"]])-1:
-            self.state["frame_number"] += 1
-        elif self.state["file_number"] < len(self.state[self.state["talk_id"]])-1:
-            self.state["file_number"] += 1
-            self.state["frame_number"] = 0
+        logging.warning("start audio frame callback listening!!")
+        return frame
+        stream_frame = self.state_obj["audios"][self.state_obj.talk_id][self.state_obj.file_number][self.state_obj.frame_number]
+        if self.state_obj.file_number <  len(self.state_obj["audios"][self.state_obj.talk_id][self.state_obj.file_number])-1:
+            self.state_obj.frame_number += 1
+        elif self.state_obj.file_number < len(self.state_obj["audios"][self.state_obj.talk_id])-1:
+            self.state_obj.file_number += 1
+            self.state_obj.frame_number = 0
         else:
-            self.state["file_number"] = 0
-            self.state["frame_number"] = 0
-            self.state["is_finished"] = True
+            self.state_obj.file_number = 0
+            self.state_obj.frame_number = 0
             return silent_audio_frame(frame)
         
         return stream_frame

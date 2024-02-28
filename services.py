@@ -8,12 +8,13 @@ import io
 import logging
 import ssl
 import openai
+import numpy as np
 ssl._create_default_https_context = ssl._create_unverified_context
 
 from langchain.memory import ConversationBufferMemory
 
 
-def save_audio_frames_in_memory(states_obj, opus_data):
+def save_audio_frames_in_memory(states_obj, opus_data: bytes):
     FRAME_SETTINGS = {
             "samples": 960,
             "sample_format": "s16",
@@ -24,18 +25,20 @@ def save_audio_frames_in_memory(states_obj, opus_data):
     index = 0
     while index < len(opus_data):
         # サンプル数ごとにデータを取得
-        data_chunk = opus_data[index:index + FRAME_SETTINGS["samples"]]
+        data_chunk = opus_data[index:index + FRAME_SETTINGS["samples"]*4]
         # オーディオフレームに変換してリストに追加
-        frame = av.AudioFrame.from_ndarray(data_chunk, format='s16', layout='stereo')
+        array = np.frombuffer(data_chunk, dtype=np.int16)
+        reshaped_array = np.expand_dims(array, axis=0)
+        frame = av.AudioFrame.from_ndarray(reshaped_array, format='s16', layout='stereo')
         frames.append(frame)
         index += FRAME_SETTINGS["samples"]
     
     if states_obj.get_talk_id() not in states_obj.audios:
         states_obj.audios[states_obj.get_talk_id()] = []
     states_obj.audios[states_obj.get_talk_id()].append(frames)
-    while True:
-        logging.warning(len(states_obj.audios[states_obj.get_talk_id()]))
-
+    logging.warning("start save audio frames in memory5")
+    logging.warning("audio frame length: %d", len(states_obj.audios[states_obj.get_talk_id()]))
+    
 def speech_to_text(audio_frame):
     return "dummy text for now."
     """
@@ -69,10 +72,9 @@ def text_to_speech(state_obj, text, model='tts-1', voice='alloy', response_forma
         "response_format": response_format,
     }
 
-    with requests.post(api_url, headers=headers, json=data, stream=True) as response:
+    with requests.post(api_url, headers=headers, json=data) as response:
         if response.status_code == 200:
-            logging.warning("end text to speech")
-            save_audio_frames_in_memory(state_obj, response.raw)
+            save_audio_frames_in_memory(state_obj, response.content)
         else:
             response.raise_for_status()
             
